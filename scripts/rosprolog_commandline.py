@@ -60,6 +60,39 @@ def read_single_keypress():
         fcntl.fcntl(fd, fcntl.F_SETFL, flags_save)
     return ret
 
+def prolog_result_to_string(value):
+    if isinstance(value, str):
+        return prolog_escape_string(value)
+    elif isinstance(value, list):
+        return '[' + ', '.join(map(prolog_result_to_string, value)) + ']'
+    elif isinstance(value, dict):
+        return prolog_dict_to_string(value)
+    else:
+        return str(value)
+
+RE_ESCAPE = re.compile(r"([\'])")
+RE_SAFE_ATOM = re.compile(r'[a-z][a-zA-Z_0-9]*')
+def prolog_escape_string(string):
+    if string == '_':
+        return '_'
+    elif re.fullmatch(RE_SAFE_ATOM, string) is None:
+        return "'" + re.sub(RE_ESCAPE, r'\\\1', string) + "'"
+    else:
+        # don't escape simple safe atoms
+        return string
+
+def prolog_dict_to_string(dic):
+    if 'term' in dic and len(dic.keys()) == 1 and isinstance(dic['term'], list):
+        # this is the way rosprolog encodes terms
+        term = dic['term']
+        args = ', '.join(map(prolog_result_to_string, term[1:]))
+        return f'{prolog_result_to_string(term[0])}({args})'
+    else:
+        inside = [prolog_result_to_string(key)
+                  + ': '
+                  + prolog_result_to_string(val)
+                  for key, val in dic.items()]
+        return '{' + ', '.join(inside) + '}'
 
 class PQ(object):
     def __init__(self):
@@ -85,7 +118,7 @@ class PQ(object):
         if solution == dict():
             sys.stdout.write('true')
         else:
-            sys.stdout.write(',\n'.join(['{}: {}'.format(k, v) for k, v in solution.items()]))
+            sys.stdout.write(',\n'.join(['{}: {}'.format(k, prolog_result_to_string(v)) for k, v in solution.items()]))
 
     def start_commandline(self):
         try:
