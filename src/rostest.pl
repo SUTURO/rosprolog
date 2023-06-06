@@ -28,6 +28,10 @@
 		assert_equals(t,t),
 		assert_unifies(t,t))).
 
+:- meta_predicate
+		assert_true(0),
+		assert_false(0).
+
 %% assert_true(+Goal) is det.
 %
 % Assert that Goal holds.
