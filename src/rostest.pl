@@ -235,7 +235,9 @@ run_test__(ModuleFile, _Opts) :-
 	;  use_module(ModuleFile)
 	),
 	% get the module name
-	use_module(Module,ModuleFile,[]),
+	( use_module(Module,ModuleFile,[])
+	-> true
+	; throw(error(existence_error(module,ModuleFile)))),
 	% load plt file if any
 	load_test_files(_),
 	% remember old user output
